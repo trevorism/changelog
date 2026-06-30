@@ -1,48 +1,46 @@
 package com.trevorism.controller
 
 /**
- * Cucumber step definitions for the Context Root acceptance tests.
- *
- * Step text is kept distinct from ChangelogEntryDefinitions (e.g. "the context root
- * status is 200") so Cucumber does not see duplicate step definitions across glue
- * files. The HTTP status is captured in the When step, not re-fetched in the Then.
+ * Context-root acceptance steps. Cucumber-Groovy glue MUST be registered at script
+ * top level with capitalized Given/When/Then (see other trevorism services, e.g.
+ * catalog) — steps wrapped in a constructor/method are never registered.
  */
 
 this.metaClass.mixin(io.cucumber.groovy.Hooks)
 this.metaClass.mixin(io.cucumber.groovy.EN)
 
-def endpoint
-def lastStatus
-def lastBody
+String base = "https://changelog.project.trevorism.com"
+def contextRoot
+def ping
 
-ContentRootDefinitions() {
-    this.endpoint = "https://changelog.project.trevorism.com"
+def httpGet = { String url ->
+    def conn = new URL(url).openConnection() as java.net.HttpURLConnection
+    conn.requestMethod = "GET"
+    int code = conn.responseCode
+    def stream = (code >= 200 && code < 400) ? conn.inputStream : conn.errorStream
+    String body = stream != null ? stream.text : ""
+    conn.disconnect()
+    return [code: code, body: body]
+}
 
-    def get = { String path ->
-        def conn = new URL("${endpoint}${path}").openConnection() as java.net.HttpURLConnection
-        try {
-            conn.requestMethod = "GET"
-            lastStatus = conn.responseCode
-            def stream = (lastStatus >= 200 && lastStatus < 400) ? conn.inputStream : conn.errorStream
-            lastBody = stream != null ? stream.text : ""
-        } finally {
-            conn.disconnect()
-        }
-    }
+Given(/the changelog application is alive/) { ->
+    httpGet("${base}/api/ping")
+}
 
-    when("I GET the context root path") { get("/api/") }
-    when("I GET the ping path") { get("/api/ping") }
+When(/I navigate to the changelog context root/) { ->
+    contextRoot = httpGet("${base}/api/")
+}
 
-    then("the context root status is 200") {
-        assert lastStatus == 200 : "Expected status 200 but got ${lastStatus}"
-    }
-    then("the context root body contains the help link") {
-        assert lastBody?.contains("/help") : "Expected body to contain '/help' but got: ${lastBody}"
-    }
-    then("the ping status is 200") {
-        assert lastStatus == 200 : "Expected status 200 but got ${lastStatus}"
-    }
-    then("the ping body is pong") {
-        assert lastBody?.trim() == "pong" : "Expected body 'pong' but got: ${lastBody}"
-    }
+Then(/a link to the help page is displayed/) { ->
+    assert contextRoot.code == 200 : "Expected 200 but got ${contextRoot.code}"
+    assert contextRoot.body.contains("/help") : "Expected body to contain /help but got: ${contextRoot.body}"
+}
+
+When(/I ping the changelog application/) { ->
+    ping = httpGet("${base}/api/ping")
+}
+
+Then(/pong is returned/) { ->
+    assert ping.code == 200 : "Expected 200 but got ${ping.code}"
+    assert ping.body.trim() == "pong" : "Expected pong but got: ${ping.body}"
 }
