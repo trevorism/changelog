@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import ChangelogTimeline from '../src/components/ChangelogTimeline.vue'
 
-const mockEntries = [
+const mockApiEntries = [
   { id: '1', date: '2026-07-01', repository: 'repo-a', summary: 'Added feature X' },
   { id: '2', date: '2026-07-01', repository: 'repo-b', summary: 'Fixed bug Y' },
   { id: '3', date: '2026-06-30', repository: 'repo-c', summary: 'Updated docs Z' }
@@ -18,15 +18,13 @@ describe('ChangelogTimeline', () => {
     expect(wrapper.text()).toContain('Loading changelog...')
   })
 
-  it('renders entries newest-first grouped by date', async () => {
+  it('renders API entries newest-first grouped by date', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => mockEntries
+      json: async () => mockApiEntries
     })
 
     const wrapper = mount(ChangelogTimeline)
-
-    // Wait for fetch to resolve and component to update
     await new Promise((r) => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
 
@@ -44,7 +42,7 @@ describe('ChangelogTimeline', () => {
     expect(date1Pos).toBeLessThan(date0Pos)
   })
 
-  it('shows empty state when no entries returned', async () => {
+  it('falls back to sample data when API returns empty list', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => []
@@ -54,7 +52,16 @@ describe('ChangelogTimeline', () => {
     await new Promise((r) => setTimeout(r, 50))
     await wrapper.vm.$nextTick()
 
-    expect(wrapper.text()).toContain('No changelog entries yet.')
+    // Sample data entries should be present
+    const text = wrapper.text()
+    expect(text).toContain('auth-provider')
+    expect(text).toContain('datastore')
+    expect(text).toContain('tenant')
+    expect(text).toContain('threshold-service')
+    expect(text).toContain('kraken-client')
+
+    // Should NOT show the empty state
+    expect(text).not.toContain('No changelog entries yet.')
   })
 
   it('shows error state when fetch fails', async () => {
@@ -65,5 +72,20 @@ describe('ChangelogTimeline', () => {
     await wrapper.vm.$nextTick()
 
     expect(wrapper.text()).toContain('Error:')
+  })
+
+  it('does not show sample data when API returns entries', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockApiEntries
+    })
+
+    const wrapper = mount(ChangelogTimeline)
+    await new Promise((r) => setTimeout(r, 50))
+    await wrapper.vm.$nextTick()
+
+    const text = wrapper.text()
+    expect(text).not.toContain('auth-provider')
+    expect(text).not.toContain('datastore')
   })
 })
