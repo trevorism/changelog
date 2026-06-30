@@ -11,8 +11,9 @@ def endpoint
 def lastResponseBody
 
 ChangelogEntryDefinitions() {
-    // Resolve the deployed service base URL from the acceptance plugin config
-    this.endpoint = System.getProperty("endpoint") ?: "http://localhost:8080"
+    // Hardcode the deployed service base URL (no System.getProperty / localhost
+    // fallback — the acceptance suite runs against the live service).
+    this.endpoint = "https://changelog.project.trevorism.com"
 
     when("I send a GET request to /api/entry") {
         def url = "${endpoint}/api/entry"
