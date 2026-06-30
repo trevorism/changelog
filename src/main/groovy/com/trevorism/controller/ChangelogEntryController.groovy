@@ -1,6 +1,8 @@
 package com.trevorism.controller
 
+import com.trevorism.data.FastDatastoreRepository
 import com.trevorism.data.PingingDatastoreRepository
+import com.trevorism.data.Repository
 import com.trevorism.https.SecureHttpClient
 import com.trevorism.model.ChangelogEntry
 import com.trevorism.secure.Roles
@@ -24,23 +26,18 @@ import org.slf4j.LoggerFactory
 class ChangelogEntryController {
 
     private static final Logger log = LoggerFactory.getLogger(ChangelogEntryController)
-    private final PingingDatastoreRepository<ChangelogEntry> repository
+    private final Repository<ChangelogEntry> repository
 
-    ChangelogEntryController(SecureHttpClient secureHttpClient) {
-        // The datastore service requires authentication (401 without it) and is torn
-        // down when idle. Pinging wakes it; SecureHttpClient authenticates the calls.
-        this.repository = new PingingDatastoreRepository<>(ChangelogEntry, secureHttpClient)
+    ChangelogEntryController() {
+        this.repository = new FastDatastoreRepository<>(ChangelogEntry)
     }
 
     @Tag(name = "Changelog Entry Operations")
-    @Operation(summary = "List all changelog entries, sorted by date desc. Optional ?repository= filter **Secure")
+    @Operation(summary = "List all changelog entries, sorted by date desc.")
     @Get(value = "/", produces = MediaType.APPLICATION_JSON)
-    List<ChangelogEntry> list(@Nullable @QueryValue("repository") String repositoryName) {
+    List<ChangelogEntry> list() {
         log.info("Listing changelog entries")
-        def entries = repository.all()
-        if (repositoryName != null && !repositoryName.isEmpty()) {
-            entries = entries.findAll { it.repository == repositoryName }
-        }
+        def entries = repository.list()
         return entries.sort { a, b -> b.date.compareTo(a.date) }
     }
 
