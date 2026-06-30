@@ -1,4 +1,4 @@
-package com.trevorism.controller
+package com.trevorism.gcloud
 
 /**
  * Changelog Entry API acceptance steps. Registered at script top level with
