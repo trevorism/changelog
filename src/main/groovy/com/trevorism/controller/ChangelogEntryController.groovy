@@ -1,6 +1,6 @@
 package com.trevorism.controller
 
-import com.trevorism.data.FastDatastoreRepository
+import com.trevorism.data.PingingDatastoreRepository
 import com.trevorism.model.ChangelogEntry
 import com.trevorism.secure.Roles
 import com.trevorism.secure.Secure
@@ -23,10 +23,12 @@ import org.slf4j.LoggerFactory
 class ChangelogEntryController {
 
     private static final Logger log = LoggerFactory.getLogger(ChangelogEntryController)
-    private final FastDatastoreRepository<ChangelogEntry> repository
+    private final PingingDatastoreRepository<ChangelogEntry> repository
 
     ChangelogEntryController() {
-        this.repository = new FastDatastoreRepository<>(ChangelogEntry)
+        // Pinging variant wakes the datastore service, which is torn down when idle;
+        // FastDatastoreRepository assumes it is already awake and 500s on a cold store.
+        this.repository = new PingingDatastoreRepository<>(ChangelogEntry)
     }
 
     @Tag(name = "Changelog Entry Operations")
