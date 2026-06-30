@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 const entries = ref([])
 const loading = ref(true)
@@ -61,41 +61,57 @@ onMounted(async () => {
   }
 })
 
-function groupByDate(items) {
-  const grouped = {}
-  items.forEach((entry) => {
-    const key = entry.date ?? 'Unknown date'
-    if (!grouped[key]) grouped[key] = []
-    grouped[key].push(entry)
-  })
-  return Object.keys(grouped)
-    .sort((a, b) => b.localeCompare(a))
-    .reduce((obj, key) => {
-      obj[key] = grouped[key]
-      return obj
-    }, {})
+// Dates arrive either as bare "2026-06-30" or full ISO "2026-06-30T00:00:00.000Z".
+// Normalize to the calendar day so grouping and formatting are stable.
+function dayKey(entry) {
+  return (entry.date ?? '').slice(0, 10) || 'Unknown date'
 }
 
-const groupedEntries = () => groupByDate(entries.value)
+// Entries grouped by day, newest day first, each group's entries sorted by repo.
+const groups = computed(() => {
+  const byDay = {}
+  for (const entry of entries.value) {
+    const key = dayKey(entry)
+    ;(byDay[key] ??= []).push(entry)
+  }
+  return Object.keys(byDay)
+    .sort((a, b) => b.localeCompare(a))
+    .map((date) => ({
+      date,
+      entries: byDay[date].sort((a, b) =>
+        (a.repository ?? '').localeCompare(b.repository ?? ''))
+    }))
+})
 
-const chipColors = ['success', 'info', 'warning', 'danger']
-function getChipColor(index) {
-  return chipColors[index % chipColors.length]
+// Stable per-repository accent color so the same repo reads consistently.
+const palette = ['#2563eb', '#0891b2', '#7c3aed', '#db2777', '#ea580c', '#16a34a', '#ca8a04']
+function repoColor(repo) {
+  let h = 0
+  for (let i = 0; i < (repo ?? '').length; i++) h = (h * 31 + repo.charCodeAt(i)) >>> 0
+  return palette[h % palette.length]
+}
+
+function repoLabel(repo) {
+  return (repo ?? '').replace(/^trevorism\//, '')
 }
 
 function formatDate(dateStr) {
+  if (dateStr === 'Unknown date') return dateStr
   const d = new Date(dateStr + 'T00:00:00Z')
-  return d.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+  return d.toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+  })
 }
 </script>
 
 <template>
-  <div class="changelog-timeline">
-    <h2 class="title">Changelog</h2>
+  <div class="changelog-page">
+    <h1 class="title">Changelog</h1>
+    <p class="subtitle">A history of changes across the Trevorism platform.</p>
 
     <div v-if="loading" class="status">
       <va-progress-circular indeterminate color="primary"></va-progress-circular>
-      <span>Loading changelog...</span>
+      <span>Loading changelog…</span>
     </div>
 
     <div v-else-if="error" class="status error">
@@ -111,51 +127,48 @@ function formatDate(dateStr) {
       ></va-empty-state>
     </div>
 
-    <template v-else>
-      <va-timeline class="timeline-root" size="small">
-        <va-timeline-item
-          v-for="(group, date) in groupedEntries()"
-          :key="date"
-          :title="formatDate(date)"
-          divider
-        >
-          <p class="raw-date">{{ date }}</p>
-          <div
-            v-for="(entry, idx) in group"
+    <div v-else class="feed">
+      <section v-for="group in groups" :key="group.date" class="day-group">
+        <h2 class="day-header">{{ formatDate(group.date) }}</h2>
+        <ul class="entry-list">
+          <li
+            v-for="entry in group.entries"
             :key="entry.id"
-            class="timeline-card"
+            class="entry"
+            :style="{ borderLeftColor: repoColor(entry.repository) }"
           >
-            <va-card class="entry-card">
-              <va-card-content>
-                <div class="entry-header">
-                  <va-chip :color="getChipColor(idx)" size="small" class="repo-chip">
-                    {{ entry.repository }}
-                  </va-chip>
-                  <span class="entry-id">#{{ entry.id }}</span>
-                </div>
-                <p class="summary">{{ entry.summary }}</p>
-              </va-card-content>
-            </va-card>
-          </div>
-        </va-timeline-item>
-      </va-timeline>
-    </template>
+            <span
+              class="repo-tag"
+              :style="{ backgroundColor: repoColor(entry.repository) }"
+            >{{ repoLabel(entry.repository) }}</span>
+            <p class="summary">{{ entry.summary }}</p>
+          </li>
+        </ul>
+      </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.changelog-timeline {
-  max-width: 780px;
+.changelog-page {
+  max-width: 760px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 2.5rem 1.25rem 4rem;
 }
 
 .title {
   text-align: center;
-  font-size: 2rem;
-  font-weight: 700;
-  color: #1e293b;
-  margin-bottom: 2.5rem;
+  font-size: 2.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 0.4rem;
+}
+
+.subtitle {
+  text-align: center;
+  color: #64748b;
+  margin: 0 0 2.5rem;
+  font-size: 1.02rem;
 }
 
 .status {
@@ -165,39 +178,78 @@ function formatDate(dateStr) {
   gap: 0.75rem;
   padding: 3rem 1rem;
   color: #64748b;
-  font-size: 1rem;
 }
 
-.status.error {
-  color: #dc2626;
-}
+.status.error { color: #dc2626; }
+.empty { padding: 3rem 1rem; }
 
-.empty {
+.feed {
   display: flex;
-  justify-content: center;
-  padding: 3rem 1rem;
+  flex-direction: column;
+  gap: 2.25rem;
 }
 
-.timeline-root {
-  max-width: 780px;
-  margin: 0 auto;
+.day-group {
+  display: flex;
+  flex-direction: column;
 }
 
-.raw-date {
-  font-weight: 600;
-  color: #475569;
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
+.day-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 0 0.9rem;
+  padding: 0.5rem 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.repo-chip {
-  font-weight: 600;
-  letter-spacing: 0.02em;
+.entry-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.entry {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 0.95rem 1.1rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-left: 4px solid #2563eb;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.entry:hover {
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.1);
+  transform: translateY(-1px);
+}
+
+.repo-tag {
+  align-self: flex-start;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
 }
 
 .summary {
+  margin: 0;
   color: #334155;
-  line-height: 1.65;
-  margin-top: 0.5rem;
+  line-height: 1.6;
+  font-size: 0.98rem;
 }
 </style>
