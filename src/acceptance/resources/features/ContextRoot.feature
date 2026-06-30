@@ -1,8 +1,11 @@
-Feature: Context Root of this API
-  In order to use the API, it must be available
+Feature: Context Root
 
-#  Scenario: HTTP GET on the ContextRoot
-#    Given the application is alive
-#    When I navigate to "https://myurl"
-#    Then then a link to the help page is displayed
+  Scenario: context root returns a link to the help page
+    When I GET the context root path
+    Then the context root status is 200
+    And the context root body contains the help link
 
+  Scenario: ping returns pong
+    When I GET the ping path
+    Then the ping status is 200
+    And the ping body is pong
