@@ -58,11 +58,30 @@ class ChangelogEntryController {
         log.info("Creating changelog entry")
         def entry = new ChangelogEntry(
                 id: java.util.UUID.randomUUID().toString(),
-                date: new Date(),
+                date: parseDate(body.date),
                 repository: body.repository as String,
                 summary: body.summary as String
         )
         return repository.create(entry)
+    }
+
+    private static Date parseDate(Object raw) {
+        // Honor a supplied ISO-8601 date (the offline generator backfills historical
+        // commit dates); default to now only when none is given. Accepts full
+        // timestamps ("2024-03-01T12:00:00Z") and date-only values ("2024-03-01").
+        if (!raw) {
+            return new Date()
+        }
+        String value = raw.toString().trim()
+        try {
+            return Date.from(java.time.Instant.parse(value))
+        } catch (Exception ignored) {
+        }
+        try {
+            return Date.from(java.time.LocalDate.parse(value).atStartOfDay(java.time.ZoneOffset.UTC).toInstant())
+        } catch (Exception ignored) {
+        }
+        return new Date()
     }
 
     @Tag(name = "Changelog Entry Operations")
