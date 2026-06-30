@@ -1,6 +1,7 @@
 package com.trevorism.controller
 
 import com.trevorism.data.PingingDatastoreRepository
+import com.trevorism.https.SecureHttpClient
 import com.trevorism.model.ChangelogEntry
 import com.trevorism.secure.Roles
 import com.trevorism.secure.Secure
@@ -25,10 +26,10 @@ class ChangelogEntryController {
     private static final Logger log = LoggerFactory.getLogger(ChangelogEntryController)
     private final PingingDatastoreRepository<ChangelogEntry> repository
 
-    ChangelogEntryController() {
-        // Pinging variant wakes the datastore service, which is torn down when idle;
-        // FastDatastoreRepository assumes it is already awake and 500s on a cold store.
-        this.repository = new PingingDatastoreRepository<>(ChangelogEntry)
+    ChangelogEntryController(SecureHttpClient secureHttpClient) {
+        // The datastore service requires authentication (401 without it) and is torn
+        // down when idle. Pinging wakes it; SecureHttpClient authenticates the calls.
+        this.repository = new PingingDatastoreRepository<>(ChangelogEntry, secureHttpClient)
     }
 
     @Tag(name = "Changelog Entry Operations")
