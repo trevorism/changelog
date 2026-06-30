@@ -32,11 +32,11 @@ class ChangelogEntryController {
     @Tag(name = "Changelog Entry Operations")
     @Operation(summary = "List all changelog entries, sorted by date desc. Optional ?repository= filter **Secure")
     @Get(value = "/", produces = MediaType.APPLICATION_JSON)
-    List<ChangelogEntry> list(@Nullable @QueryValue String repository) {
+    List<ChangelogEntry> list(@Nullable @QueryValue("repository") String repositoryName) {
         log.info("Listing changelog entries")
         def entries = repository.all()
-        if (repository != null && !repository.isEmpty()) {
-            entries = entries.findAll { it.repository == repository }
+        if (repositoryName != null && !repositoryName.isEmpty()) {
+            entries = entries.findAll { it.repository == repositoryName }
         }
         return entries.sort { a, b -> b.date.compareTo(a.date) }
     }
