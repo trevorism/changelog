@@ -1,11 +1,11 @@
 <script setup>
 import MenuBar from '@trevorism/ui-header-bar'
-import SplashPage from './components/SplashPage.vue'
+import ChangelogTimeline from './components/ChangelogTimeline.vue'
 </script>
 
 <template>
   <menu-bar></menu-bar>
-  <splash-page msg="Hello World"></splash-page>
+  <changelog-timeline />
 </template>
 
 <style scoped></style>
