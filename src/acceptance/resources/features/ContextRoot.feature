@@ -1,11 +1,11 @@
 Feature: Context Root
 
   Scenario: context root returns a link to the help page
-    When I send a GET request to /api/
-    Then the response status is 200
-    And the response body contains /help
+    When I GET the context root path
+    Then the context root status is 200
+    And the context root body contains the help link
 
   Scenario: ping returns pong
-    When I send a GET request to /api/ping
-    Then the response status is 200
-    And the response body is pong
+    When I GET the ping path
+    Then the ping status is 200
+    And the ping body is pong
