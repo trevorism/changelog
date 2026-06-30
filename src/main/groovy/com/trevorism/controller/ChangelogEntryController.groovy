@@ -57,8 +57,9 @@ class ChangelogEntryController {
     @Status(HttpStatus.CREATED)
     ChangelogEntry create(@Body Map<String, Object> body) {
         log.info("Creating changelog entry")
+        // Leave id unset: the datastore assigns the id on create (it rejects a
+        // client-supplied id with "Unable to create").
         def entry = new ChangelogEntry(
-                id: java.util.UUID.randomUUID().toString(),
                 date: parseDate(body.date),
                 repository: body.repository as String,
                 summary: body.summary as String
