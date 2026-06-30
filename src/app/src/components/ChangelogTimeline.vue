@@ -91,6 +91,63 @@ function repoColor(repo) {
   return palette[h % palette.length]
 }
 
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+
+// Monthly frequency buckets spanning the full range of entries. Gaps between the
+// earliest and latest month are filled with zero so the histogram reads as a true
+// timeline rather than a list of only the active months.
+const histogram = computed(() => {
+  const counts = {}
+  for (const entry of entries.value) {
+    const ym = dayKey(entry).slice(0, 7)
+    if (ym.length !== 7) continue
+    counts[ym] = (counts[ym] ?? 0) + 1
+  }
+  const keys = Object.keys(counts).sort()
+  if (!keys.length) return []
+
+  const [minY, minM] = keys[0].split('-').map(Number)
+  const [maxY, maxM] = keys[keys.length - 1].split('-').map(Number)
+  const months = []
+  let y = minY, m = minM
+  while (y < maxY || (y === maxY && m <= maxM)) {
+    const ym = `${y}-${String(m).padStart(2, '0')}`
+    months.push({ ym, count: counts[ym] ?? 0, label: `${MONTH_NAMES[m - 1]} ${y}` })
+    if (++m > 12) { m = 1; y++ }
+  }
+  return months
+})
+
+// Bars grouped under a per-year label so the user can navigate by year and month.
+const histogramYears = computed(() => {
+  const byYear = {}
+  for (const bucket of histogram.value) {
+    const year = bucket.ym.slice(0, 4)
+    ;(byYear[year] ??= []).push(bucket)
+  }
+  return Object.keys(byYear).sort().map((year) => ({ year, months: byYear[year] }))
+})
+
+const maxCount = computed(() =>
+  Math.max(1, ...histogram.value.map((b) => b.count)))
+
+// Bar height as a percentage of the chart area; non-empty months keep a small
+// floor so a single change is still visible against a tall month.
+function barHeight(count) {
+  if (!count) return 0
+  return Math.max(8, Math.round((count / maxCount.value) * 100))
+}
+
+// Snap the feed to a month by scrolling to its newest day. Groups are ordered
+// newest-first, so the first group whose date falls in the month is its top.
+function snapToMonth(ym) {
+  const group = groups.value.find((g) => g.date.startsWith(ym))
+  if (!group) return
+  document.getElementById('day-' + group.date)
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 function repoLabel(repo) {
   return (repo ?? '').replace(/^trevorism\//, '')
 }
@@ -127,9 +184,39 @@ function formatDate(dateStr) {
       ></va-empty-state>
     </div>
 
-    <div v-else class="feed">
-      <section v-for="group in groups" :key="group.date" class="day-group">
-        <h2 class="day-header">{{ formatDate(group.date) }}</h2>
+    <template v-else>
+      <div v-if="histogram.length" class="histogram" role="group" aria-label="Changelog frequency over time">
+        <p class="histogram-hint">Click a month to jump to it</p>
+        <div class="histogram-years">
+          <div v-for="yr in histogramYears" :key="yr.year" class="histogram-year">
+            <div class="histogram-bars">
+              <button
+                v-for="bucket in yr.months"
+                :key="bucket.ym"
+                type="button"
+                class="histogram-bar"
+                :class="{ 'is-empty': !bucket.count }"
+                :disabled="!bucket.count"
+                :title="`${bucket.label}: ${bucket.count} change${bucket.count === 1 ? '' : 's'}`"
+                :aria-label="`${bucket.label}, ${bucket.count} changes`"
+                @click="snapToMonth(bucket.ym)"
+              >
+                <span class="histogram-bar-fill" :style="{ height: barHeight(bucket.count) + '%' }"></span>
+              </button>
+            </div>
+            <span class="histogram-year-label">{{ yr.year }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="feed">
+        <section
+          v-for="group in groups"
+          :key="group.date"
+          :id="'day-' + group.date"
+          class="day-group"
+        >
+          <h2 class="day-header">{{ formatDate(group.date) }}</h2>
         <ul class="entry-list">
           <li
             v-for="entry in group.entries"
@@ -144,8 +231,9 @@ function formatDate(dateStr) {
             <p class="summary">{{ entry.summary }}</p>
           </li>
         </ul>
-      </section>
-    </div>
+        </section>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -192,6 +280,89 @@ function formatDate(dateStr) {
 .day-group {
   display: flex;
   flex-direction: column;
+  scroll-margin-top: 1rem;
+}
+
+.histogram {
+  margin: 0 0 2.75rem;
+  padding: 1rem 1.1rem 0.75rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.histogram-hint {
+  margin: 0 0 0.75rem;
+  font-size: 0.78rem;
+  color: #94a3b8;
+  text-align: center;
+}
+
+.histogram-years {
+  display: flex;
+  align-items: flex-end;
+  gap: 1.25rem;
+}
+
+.histogram-year {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.histogram-bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 88px;
+}
+
+.histogram-bar {
+  flex: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.histogram-bar:hover:not(.is-empty) {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.histogram-bar.is-empty {
+  cursor: default;
+}
+
+.histogram-bar-fill {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  background: #2563eb;
+  border-radius: 4px 4px 0 0;
+  transition: background 0.12s ease;
+}
+
+.histogram-bar:hover:not(.is-empty) .histogram-bar-fill {
+  background: #1d4ed8;
+}
+
+.histogram-year-label {
+  margin-top: 0.5rem;
+  padding-top: 0.4rem;
+  border-top: 1px solid #e2e8f0;
+  text-align: center;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #64748b;
 }
 
 .day-header {
