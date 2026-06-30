@@ -10,6 +10,7 @@ import com.trevorism.secure.Secure
 import io.micronaut.core.annotation.Nullable
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.MediaType
+import io.micronaut.http.annotation.Body
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Delete
 import io.micronaut.http.annotation.Get
@@ -54,7 +55,7 @@ class ChangelogEntryController {
     @Post(value = "/", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON)
     @Secure(Roles.SYSTEM)
     @Status(HttpStatus.CREATED)
-    ChangelogEntry create(Map<String, Object> body) {
+    ChangelogEntry create(@Body Map<String, Object> body) {
         log.info("Creating changelog entry")
         def entry = new ChangelogEntry(
                 id: java.util.UUID.randomUUID().toString(),
