@@ -1,11 +1,11 @@
 Feature: Context Root
 
-  Scenario: context root returns a link to the help page
-    When I GET the context root path
-    Then the context root status is 200
-    And the context root body contains the help link
+  Scenario: the context root links to the help page
+    Given the changelog application is alive
+    When I navigate to the changelog context root
+    Then a link to the help page is displayed
 
   Scenario: ping returns pong
-    When I GET the ping path
-    Then the ping status is 200
-    And the ping body is pong
+    Given the changelog application is alive
+    When I ping the changelog application
+    Then pong is returned

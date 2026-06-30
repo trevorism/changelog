@@ -1,42 +1,29 @@
 package com.trevorism.controller
 
 /**
- * Cucumber step definitions for the Changelog Entry API acceptance tests.
+ * Changelog Entry API acceptance steps. Registered at script top level with
+ * capitalized When/Then (cucumber-groovy); step text kept distinct from
+ * ContentRootDefinitions to avoid DuplicateStepDefinitionException.
  */
 
 this.metaClass.mixin(io.cucumber.groovy.Hooks)
 this.metaClass.mixin(io.cucumber.groovy.EN)
 
-def endpoint
-def lastResponseBody
+String base = "https://changelog.project.trevorism.com"
+def entries
 
-ChangelogEntryDefinitions() {
-    // Hardcode the deployed service base URL (no System.getProperty / localhost
-    // fallback — the acceptance suite runs against the live service).
-    this.endpoint = "https://changelog.project.trevorism.com"
+When(/I request the changelog entries/) { ->
+    def conn = new URL("${base}/api/entry").openConnection() as java.net.HttpURLConnection
+    conn.requestMethod = "GET"
+    int code = conn.responseCode
+    def stream = (code >= 200 && code < 400) ? conn.inputStream : conn.errorStream
+    entries = [code: code, body: stream != null ? stream.text : ""]
+    conn.disconnect()
+}
 
-    when("I send a GET request to /api/entry") {
-        def url = "${endpoint}/api/entry"
-        lastResponseBody = new URL(url).getText()
-    }
-
-    then("the response status is 200") {
-        assert lastResponseBody != null : "Response body was not captured"
-        def url = "${endpoint}/api/entry"
-        def conn = new URL(url).openConnection() as java.net.HttpURLConnection
-        try {
-            conn.requestMethod = "GET"
-            def status = conn.responseCode
-            assert status == 200 : "Expected status 200 but got ${status}"
-        } finally {
-            conn.disconnect()
-        }
-    }
-
-    then("the response body is a JSON array") {
-        assert lastResponseBody != null : "Response body was not captured"
-        def trimmed = lastResponseBody.trim()
-        assert trimmed.startsWith("[") && trimmed.endsWith("]") :
-            "Expected response body to be a JSON array but got: ${trimmed.take(200)}"
-    }
+Then(/the changelog entries are returned as a JSON array/) { ->
+    assert entries.code == 200 : "Expected 200 but got ${entries.code}"
+    String trimmed = entries.body.trim()
+    assert trimmed.startsWith("[") && trimmed.endsWith("]") :
+            "Expected a JSON array but got: ${trimmed.take(200)}"
 }
