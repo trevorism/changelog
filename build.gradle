@@ -50,7 +50,7 @@ dependencies {
     implementation("io.micronaut.security:micronaut-security")
     runtimeOnly("org.yaml:snakeyaml")
 
-    implementation("jakarta.annotation:jakarta.annotation-api")
+    implementation('com.trevorism:datastore-client:4.1.0')
     implementation 'io.projectreactor:reactor-core:3.8.5'
 
     implementation("io.swagger.core.v3:swagger-annotations")
