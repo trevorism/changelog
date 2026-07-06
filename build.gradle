@@ -24,7 +24,7 @@ buildscript {
 plugins {
     id("groovy")
     id("com.gradleup.shadow") version "9.4.1"
-    id("io.micronaut.application") version "5.0.0"
+    id("io.micronaut.application") version "5.0.2"
     id("com.github.node-gradle.node") version "7.1.0"
     id("jacoco")
 }
@@ -147,4 +147,5 @@ buildLayers.dependsOn("copyFrontEnd")
 shadowJar.dependsOn("copyFrontEnd")
 compileTestGroovy.mustRunAfter('copyFrontEnd')
 compileAcceptanceGroovy.mustRunAfter('copyFrontEnd')
+check.dependsOn testApp
 build.dependsOn jacocoTestCoverageVerification

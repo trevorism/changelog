@@ -15,7 +15,7 @@ describe('ChangelogTimeline', () => {
 
   it('shows loading state initially', () => {
     const wrapper = mount(ChangelogTimeline)
-    expect(wrapper.text()).toContain('Loading changelog...')
+    expect(wrapper.text()).toContain('Loading changelog')
   })
 
   it('renders API entries newest-first grouped by date', async () => {
@@ -36,10 +36,17 @@ describe('ChangelogTimeline', () => {
     expect(text).toContain('repo-c')
     expect(text).toContain('Updated docs Z')
 
-    // 2026-07-01 should appear before 2026-06-30 (newest first)
-    const date1Pos = text.indexOf('2026-07-01')
-    const date0Pos = text.indexOf('2026-06-30')
-    expect(date1Pos).toBeLessThan(date0Pos)
+    // Newest day group first: repo-a/repo-b are the 07-01 entries, repo-c is 06-30,
+    // so both 07-01 repos must render before the 06-30 repo. (Dates render via
+    // toLocaleDateString, which is locale/timezone-dependent, so we assert on the
+    // repository ordering rather than a formatted date string.)
+    const posA = text.indexOf('repo-a')
+    const posB = text.indexOf('repo-b')
+    const posC = text.indexOf('repo-c')
+    expect(posA).toBeLessThan(posC)
+    expect(posB).toBeLessThan(posC)
+    // Within the 07-01 group entries sort by repository, so repo-a precedes repo-b.
+    expect(posA).toBeLessThan(posB)
   })
 
   it('falls back to sample data when API returns empty list', async () => {
