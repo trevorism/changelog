@@ -50,6 +50,7 @@ dependencies {
     implementation("io.micronaut.security:micronaut-security")
     runtimeOnly("org.yaml:snakeyaml")
 
+    implementation 'com.trevorism:micronaut-utility-beans:2.0.0'
     implementation('com.trevorism:datastore-client:4.1.0')
     implementation 'io.projectreactor:reactor-core:3.8.5'
 
@@ -89,7 +90,7 @@ appengine {
         projectId = "trevorism-project"
         stopPreviousVersion = true
         promote = true
-        version = "0-1-0"
+        version = "0-2-0"
     }
 }
 

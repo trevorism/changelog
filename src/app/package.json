@@ -17,7 +17,6 @@
    "dependencies": {
       "@tailwindcss/vite": "^4.3.2",
       "vue": "^3.5.39",
-      "vue-mixpanel": "^2.0.0",
       "vue-router": "^5.1.0",
       "vue3-click-away": "^1.2.4",
       "vuestic-ui": "^1.10.3"
