@@ -23,7 +23,7 @@ buildscript {
 
 plugins {
     id("groovy")
-    id("com.gradleup.shadow") version "9.4.1"
+    id("com.gradleup.shadow") version "9.6.0"
     id("io.micronaut.application") version "5.0.2"
     id("com.github.node-gradle.node") version "7.1.0"
     id("jacoco")
@@ -52,7 +52,7 @@ dependencies {
 
     implementation 'com.trevorism:micronaut-utility-beans:2.0.0'
     implementation('com.trevorism:datastore-client:4.1.0')
-    implementation 'io.projectreactor:reactor-core:3.8.5'
+    implementation 'io.projectreactor:reactor-core:3.8.6'
 
     implementation("io.swagger.core.v3:swagger-annotations")
     compileOnly("io.micronaut.openapi:micronaut-openapi"){
