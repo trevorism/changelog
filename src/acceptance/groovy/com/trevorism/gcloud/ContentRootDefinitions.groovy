@@ -9,7 +9,7 @@ package com.trevorism.gcloud
 this.metaClass.mixin(io.cucumber.groovy.Hooks)
 this.metaClass.mixin(io.cucumber.groovy.EN)
 
-String base = "https://changelog.project.trevorism.com"
+String base = System.getenv("ACCEPTANCE_BASE_URL") ?: "https://changelog.project.trevorism.com"
 def contextRoot
 def ping
 
