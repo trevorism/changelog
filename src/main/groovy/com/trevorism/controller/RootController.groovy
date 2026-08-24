@@ -1,5 +1,6 @@
 package com.trevorism.controller
 
+import com.trevorism.AppVersion
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.MediaType
 import io.micronaut.http.annotation.Controller
@@ -19,11 +20,7 @@ class RootController {
 
     @Tag(name = "Root Operations")
     @Operation(summary = "Context Root of the Application")
-    @ApiResponse(
-            responseCode = "200", content = @Content(mediaType = "text/html", schema = @Schema(type = "string"))
-    )
-
-    @Tag(name = "Root Operations")
+    @ApiResponse(responseCode = "200", content = @Content(mediaType = "text/html", schema = @Schema(type = "string")))
     @Get(produces = MediaType.TEXT_HTML)
     HttpResponse<String> index() {
         log.info("Hit context root")
@@ -32,9 +29,7 @@ class RootController {
 
     @Tag(name = "Root Operations")
     @Operation(summary = "Returns 'pong' on success")
-    @ApiResponse(
-            responseCode = "200", content = @Content(mediaType = "text/plain", schema = @Schema(type = "string"))
-    )
+    @ApiResponse(responseCode = "200", content = @Content(mediaType = "text/plain", schema = @Schema(type = "string")))
     @Get(value = "/ping", produces = MediaType.TEXT_PLAIN)
     String ping() {
         return "pong"
@@ -50,14 +45,10 @@ class RootController {
 
     @Tag(name = "Root Operations")
     @Operation(summary = "Returns the version of the API")
-    @ApiResponse(
-            responseCode = "200",
-            content = @Content(mediaType = "text/plain",
-                    schema = @Schema(type = "string"))
-    )
+    @ApiResponse(responseCode = "200",  content = @Content(mediaType = "text/plain", schema = @Schema(type = "string")))
     @Get(value = "/version", produces = MediaType.TEXT_PLAIN)
     String version() {
-        return "0.1.0"
+        return AppVersion.SEMVER
     }
 
 }

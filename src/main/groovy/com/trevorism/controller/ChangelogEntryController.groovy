@@ -50,14 +50,12 @@ class ChangelogEntryController {
     }
 
     @Tag(name = "Changelog Entry Operations")
-    @Operation(summary = "Create a new changelog entry. Secure: Roles.SYSTEM.")
+    @Operation(summary = "Create a new changelog entry **Secure")
     @Post(value = "/", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON)
-    @Secure(Roles.SYSTEM)
+    @Secure(value = Roles.USER, authorizeAudience = true)
     @Status(HttpStatus.CREATED)
     ChangelogEntry create(@Body Map<String, Object> body) {
         log.info("Creating changelog entry")
-        // Leave id unset: the datastore assigns the id on create (it rejects a
-        // client-supplied id with "Unable to create").
         def entry = new ChangelogEntry(
                 date: parseDate(body.date),
                 repository: body.repository as String,
@@ -67,9 +65,6 @@ class ChangelogEntryController {
     }
 
     private static Date parseDate(Object raw) {
-        // Honor a supplied ISO-8601 date (the offline generator backfills historical
-        // commit dates); default to now only when none is given. Accepts full
-        // timestamps ("2024-03-01T12:00:00Z") and date-only values ("2024-03-01").
         if (!raw) {
             return new Date()
         }
@@ -86,9 +81,9 @@ class ChangelogEntryController {
     }
 
     @Tag(name = "Changelog Entry Operations")
-    @Operation(summary = "Delete a changelog entry by id. Secure: Roles.SYSTEM.")
+    @Operation(summary = "Delete a changelog entry by id. **Secure")
     @Delete(value = "{id}")
-    @Secure(Roles.SYSTEM)
+    @Secure(value = Roles.USER, authorizeAudience = true)
     void delete(@PathVariable String id) {
         log.info("Deleting changelog entry: {}", id)
         repository.delete(id)
