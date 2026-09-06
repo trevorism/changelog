@@ -53,6 +53,7 @@ dependencies {
     runtimeOnly("org.yaml:snakeyaml")
 
     implementation 'com.trevorism:micronaut-utility-beans:2.1.0'
+    implementation 'com.trevorism:micronaut-ui-auth:1.1.0'
     implementation('com.trevorism:datastore-client:4.1.0')
 
     implementation("io.swagger.core.v3:swagger-annotations")
